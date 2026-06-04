@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Lining Club — Firebase Storage rules.
+// Assets are publicly readable (served on the storefront). Uploads are
+// restricted to staff/admin and validated for type + size.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function role() {
+      return request.auth != null ? request.auth.token.role : "";
+    }
+    function isStaffOrAdmin() {
+      return role() == "admin" || role() == "staff";
+    }
+    function isValidImage() {
+      return request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches("image/(jpeg|png|webp|avif|gif)");
+    }
+
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isStaffOrAdmin() && isValidImage();
+    }
+    match /banners/{allPaths=**} {
+      allow read: if true;
+      allow write: if isStaffOrAdmin() && isValidImage();
+    }
+    match /content/{allPaths=**} {
+      allow read: if true;
+      allow write: if isStaffOrAdmin() && isValidImage();
+    }
+  }
+}

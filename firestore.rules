@@ -1,0 +1,75 @@
+rules_version = '2';
+
+// Lining Club — Firestore security rules.
+// Storefront is fully public READ. All privileged writes go through the
+// server (firebase-admin), which bypasses these rules. The rules below are
+// the defense-in-depth layer for any direct client access (admin console).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function role() {
+      return isSignedIn() ? request.auth.token.role : "";
+    }
+    function isAdmin() {
+      return role() == "admin";
+    }
+    function isStaff() {
+      return role() == "staff";
+    }
+    function isStaffOrAdmin() {
+      return isAdmin() || isStaff();
+    }
+
+    // Public catalog — anyone can read; staff/admin can write.
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isStaffOrAdmin();
+    }
+    match /collections/{id} {
+      allow read: if true;
+      allow write: if isStaffOrAdmin();
+    }
+
+    // Editable content blocks — public read, staff/admin write.
+    match /content/{id} {
+      allow read: if true;
+      allow write: if isStaffOrAdmin();
+    }
+
+    // Settings — public read (shipping text, contact). Only ADMIN may write;
+    // staff must not change critical configuration.
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Reviews — public can read APPROVED ones. Guests may submit a review,
+    // but only as `pending` with a sane shape. Moderation is staff/admin.
+    match /reviews/{id} {
+      allow read: if resource.data.status == "approved" || isStaffOrAdmin();
+      allow create: if request.resource.data.status == "pending"
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.body is string
+        && request.resource.data.body.size() <= 2000;
+      allow update, delete: if isStaffOrAdmin();
+    }
+
+    // Orders — never readable/writable by the public client. Created and
+    // mutated server-side via admin SDK; staff/admin may read/manage in console.
+    match /orders/{id} {
+      allow read, update: if isStaffOrAdmin();
+      allow create, delete: if isAdmin();
+    }
+
+    // Admin/staff accounts — only ADMIN can read or manage. Staff cannot
+    // manage admins.
+    match /admins/{uid} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
