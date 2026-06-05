@@ -37,10 +37,26 @@ export function ReviewSection({
     }
     setSubmitting(true);
     try {
-      // TODO(api): POST /api/reviews -> Firestore (status: "pending").
-      // Optimistically show the review as awaiting moderation.
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          author: author.trim(),
+          rating,
+          body: body.trim(),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        review?: { id: string };
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error ?? "Сэтгэгдэл илгээхэд алдаа гарлаа");
+      }
+      // Optimistically show the new review as awaiting moderation.
       const review: Review = {
-        id: crypto.randomUUID(),
+        id: data.review?.id ?? crypto.randomUUID(),
         productId,
         author: author.trim(),
         rating: rating as Review["rating"],
@@ -54,6 +70,8 @@ export function ReviewSection({
       setRating(5);
       setOpen(false);
       toast.success("Сэтгэгдэл илгээгдлээ. Шалгасны дараа нийтлэгдэнэ.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Алдаа гарлаа");
     } finally {
       setSubmitting(false);
     }

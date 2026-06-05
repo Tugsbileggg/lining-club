@@ -12,6 +12,7 @@ import {
   getProductByHandle,
   getRelatedProducts,
 } from "@/services/catalog";
+import { getApprovedReviews } from "@/services/reviews";
 
 interface Params {
   params: Promise<{ handle: string }>;
@@ -38,7 +39,10 @@ export default async function ProductPage({ params }: Params) {
   const product = await getProductByHandle(decodeURIComponent(handle));
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product, 4);
+  const [related, reviews] = await Promise.all([
+    getRelatedProducts(product, 4),
+    getApprovedReviews(product.id),
+  ]);
 
   return (
     <div>
@@ -68,7 +72,7 @@ export default async function ProductPage({ params }: Params) {
         </section>
       )}
 
-      <ReviewSection productId={product.id} />
+      <ReviewSection productId={product.id} initialReviews={reviews} />
     </div>
   );
 }
