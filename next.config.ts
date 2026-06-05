@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "cdn.shopify.com" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "storage.googleapis.com" },
+      // Example/placeholder product & collection imagery.
+      { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
 };

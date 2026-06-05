@@ -7,6 +7,7 @@ export const ALLOWED_IMAGE_HOSTS = [
   "cdn.shopify.com",
   "firebasestorage.googleapis.com",
   "storage.googleapis.com",
+  "images.unsplash.com",
 ];
 
 const heroImage = z
