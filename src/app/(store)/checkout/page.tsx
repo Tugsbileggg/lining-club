@@ -53,8 +53,9 @@ export default function CheckoutPage() {
   const paymentMethod = watch("paymentMethod");
 
   async function onSubmit(values: CheckoutInput) {
-    // TODO(backend): QPay invoice + confirmation email happen server-side once
-    // credentials land. The order itself is now persisted to Firestore.
+    // The order is persisted to Firestore and a confirmation email is sent
+    // server-side (console mode until Resend is configured).
+    // TODO(backend): QPay invoice once QPay credentials land.
     try {
       const res = await fetch("/api/orders", {
         method: "POST",

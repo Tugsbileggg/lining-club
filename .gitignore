@@ -35,3 +35,6 @@ firebase-debug.log
 
 # typescript
 *.tsbuildinfo
+
+# claude local settings (may contain tokens)
+.claude/settings.local.json

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ZodError } from "zod";
 import { orderInputSchema } from "@/lib/validation/order";
 import { createOrder, OrderError } from "@/services/orders";
+import { notifyOrder } from "@/lib/emails/order";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const input = orderInputSchema.parse(body);
     const order = await createOrder(input);
+    // Confirmation + store notification. Never throws (failure is logged only).
+    await notifyOrder(order);
     return NextResponse.json(
       {
         order: {
