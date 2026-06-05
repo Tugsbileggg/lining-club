@@ -3,6 +3,7 @@ import Link from "next/link";
 import { mainNav, siteConfig } from "@/config/site";
 import { MobileNav } from "./mobile-nav";
 import { SearchSheet } from "./search-sheet";
+import { ThemeToggle } from "./theme-toggle";
 import { CartButton } from "@/components/cart/cart-button";
 
 export function Header() {
@@ -19,7 +20,7 @@ export function Header() {
               width={600}
               height={600}
               priority
-              className="h-12 w-12 object-contain"
+              className="h-12 w-12 object-contain invert dark:invert-0"
             />
           </Link>
 
@@ -37,6 +38,7 @@ export function Header() {
 
           <div className="ml-auto flex items-center gap-0.5 lg:ml-0">
             <SearchSheet />
+            <ThemeToggle />
             <CartButton />
           </div>
         </div>
