@@ -50,10 +50,14 @@ export async function getProductByHandle(
   return (await activeProducts()).find((p) => p.handle === handle) ?? null;
 }
 
+/**
+ * Only products explicitly marked `featured` in the admin. Returns an empty
+ * array when none are marked — callers hide the section rather than falling
+ * back to the whole catalog.
+ */
 export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
   const all = await activeProducts();
-  const featured = all.filter((p) => p.featured);
-  return (featured.length ? featured : all).slice(0, limit);
+  return all.filter((p) => p.featured).slice(0, limit);
 }
 
 export async function getCollections(): Promise<Collection[]> {

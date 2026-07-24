@@ -69,6 +69,11 @@ function buildProduct(
 function revalidateStorefront(handle?: string) {
   revalidatePath("/");
   revalidatePath("/products");
+  // Category pages are statically generated per collection handle. Revalidate
+  // the whole dynamic route (not one handle) so that moving a product between
+  // categories refreshes both the old and the new one. Passing the route
+  // pattern also avoids encoding issues — collection handles are Cyrillic.
+  revalidatePath("/collections/[handle]", "page");
   if (handle) revalidatePath(`/products/${handle}`);
 }
 

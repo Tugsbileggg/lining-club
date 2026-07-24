@@ -31,10 +31,12 @@ export default async function HomePage() {
     <>
       <Hero />
 
-      <section className="container-page py-14">
-        <SectionHeading title="Онцлох бараа" href="/products" />
-        <ProductGrid products={featured} />
-      </section>
+      {featured.length > 0 && (
+        <section className="container-page py-14">
+          <SectionHeading title="Онцлох бараа" href="/products" />
+          <ProductGrid products={featured} />
+        </section>
+      )}
 
       <section className="container-page py-14">
         <SectionHeading title="Ангилал" />
