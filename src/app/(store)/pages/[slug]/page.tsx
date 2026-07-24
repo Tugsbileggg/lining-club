@@ -5,14 +5,6 @@ import { siteConfig } from "@/config/site";
 // Static editable content. TODO(backend): source from Firestore `content/{slug}`
 // so admin/staff can edit these without a deploy.
 const PAGES: Record<string, { title: string; body: string[] }> = {
-  shipping: {
-    title: "Хүргэлт",
-    body: [
-      "Улаанбаатар хотод захиалгыг 1-2 хоногийн дотор хүргэнэ.",
-      "Орон нутагт унаанд тавьж илгээх ба хүргэлтийн нөхцөлийг захиалга баталгаажсаны дараа холбогдон тохирно.",
-      "Хүргэлттэй холбоотой асуудлыг " + siteConfig.contact.phone + " дугаараар лавлана уу.",
-    ],
-  },
   contact: {
     title: "Холбоо барих",
     body: [

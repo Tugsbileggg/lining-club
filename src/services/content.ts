@@ -13,8 +13,7 @@ const DOC = "home";
 export const DEFAULT_HERO: HeroContent = {
   eyebrow: "Lining Club",
   heading: "Шинэ улирлын пүүз",
-  subheading:
-    "Чанартай, загварлаг пүүз, гутлын цуглуулга. Улаанбаатар даяар хүргэлттэй.",
+  subheading: "Чанартай, загварлаг пүүз, гутлын цуглуулга.",
   image:
     "https://cdn.shopify.com/s/files/1/0821/3053/4648/files/HeroCategory-Mobile_1x1_757943AACAG9055_001_Default.jpg?v=1776154539",
   ctaLabel: "Дэлгүүр хэсэх",

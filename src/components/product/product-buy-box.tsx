@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Truck, RotateCcw } from "lucide-react";
 import type { Product, ProductVariant } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +14,6 @@ import { QuantityStepper } from "@/components/cart/quantity-stepper";
 import { useCart } from "@/features/cart/store";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-const SHIPPING_TEXT =
-  "Улаанбаатар хотод 1-2 хоногт хүргэнэ. Орон нутагт унаанд тавьж илгээнэ. Хүргэлтийн нөхцөлийг захиалга баталгаажсаны дараа холбогдон тохирно.";
 
 function findVariant(
   product: Product,
@@ -162,26 +158,11 @@ export function ProductBuyBox({ product }: { product: Product }) {
         </Button>
       </div>
 
-      <div className="space-y-2 rounded-lg border p-4 text-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Truck className="size-4" /> Улаанбаатар даяар хүргэлттэй
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <RotateCcw className="size-4" /> 24 цагийн дотор солих боломжтой
-        </div>
-      </div>
-
       <Accordion type="single" collapsible className="border-t">
         <AccordionItem value="desc">
           <AccordionTrigger>Тайлбар</AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             {product.description}
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="shipping">
-          <AccordionTrigger>Хүргэлт</AccordionTrigger>
-          <AccordionContent className="text-muted-foreground">
-            {SHIPPING_TEXT}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

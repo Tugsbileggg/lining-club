@@ -44,7 +44,6 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     title: "Тусламж",
     items: [
       { label: "Захиалга хянах", href: "/track" },
-      { label: "Хүргэлт", href: "/pages/shipping" },
       { label: "Холбоо барих", href: "/pages/contact" },
     ],
   },
