@@ -8,22 +8,27 @@ import {
   getProductsByCollection,
 } from "@/services/catalog";
 
+/** Shown on a category tile when the category has no product image yet. */
+const STORE_LOGO = "/logo.png";
+
 export default async function HomePage() {
   const [featured, collections] = await Promise.all([
     getFeaturedProducts(8),
     getCollections(),
   ]);
 
-  // Representative image per collection (first product's first image).
+  // Tile image per collection: the most recently added product that actually
+  // has an image, so a category cover follows its newest arrival. Categories
+  // with no usable product image fall back to the store logo.
   const tiles = await Promise.all(
     collections
       .filter((c) => c.handle !== "all-sneakers")
       .map(async (c) => {
         const products = await getProductsByCollection(c.handle);
-        return {
-          ...c,
-          image: c.image?.url ?? products[0]?.images[0]?.url,
-        };
+        const newestImage = [...products]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .find((p) => p.images[0]?.url)?.images[0]?.url;
+        return { ...c, image: newestImage ?? STORE_LOGO, isLogo: !newestImage };
       }),
   );
 
@@ -47,6 +52,7 @@ export default async function HomePage() {
               title={c.title}
               href={`/collections/${c.handle}`}
               image={c.image}
+              logo={c.isLogo}
             />
           ))}
         </div>
