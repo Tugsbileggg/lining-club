@@ -8,19 +8,15 @@ const SESSION_COOKIE = "lc_session";
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const hasSession = Boolean(req.cookies.get(SESSION_COOKIE));
 
-  if (pathname === "/admin/login") {
-    if (hasSession) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/admin";
-      url.search = "";
-      return NextResponse.redirect(url);
-    }
-    return NextResponse.next();
-  }
+  // The login page must always be reachable. This guard only sees whether a
+  // cookie exists, not whether it is still valid, so bouncing a cookie holder
+  // to /admin would loop forever against the protected layout: that layout
+  // redirects back here whenever it rejects the session (expired cookie, or a
+  // user whose role claim was revoked or never granted).
+  if (pathname === "/admin/login") return NextResponse.next();
 
-  if (!hasSession) {
+  if (!req.cookies.get(SESSION_COOKIE)) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin/login";
     url.search = `?next=${encodeURIComponent(pathname)}`;

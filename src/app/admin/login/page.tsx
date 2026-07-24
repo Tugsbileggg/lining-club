@@ -26,7 +26,9 @@ export default function AdminLoginPage() {
         email.trim(),
         password,
       );
-      const idToken = await cred.user.getIdToken();
+      // Force a refresh so a role claim granted moments ago is on the token —
+      // a cached one would still be missing it and the session call would 403.
+      const idToken = await cred.user.getIdToken(true);
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
