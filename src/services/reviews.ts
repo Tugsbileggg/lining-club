@@ -4,7 +4,7 @@
 import "server-only";
 import { revalidatePath } from "next/cache";
 import type { Review, ReviewStatus } from "@/types";
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
 import { getProductById } from "./products";
 import type { ReviewInput } from "@/lib/validation/review";
 
@@ -27,14 +27,23 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
 /** Approved reviews for a product (storefront). Filters status in memory to
  * avoid a composite index on (productId, status). */
 export async function getApprovedReviews(productId: string): Promise<Review[]> {
-  const snap = await adminDb()
-    .collection(COLLECTION)
-    .where("productId", "==", productId)
-    .get();
-  return snap.docs
-    .map((d) => d.data() as Review)
-    .filter((r) => r.status === "approved")
-    .sort((a, b) => b.createdAt - a.createdAt);
+  // The storefront (incl. prerender) must render without Firebase credentials,
+  // and a Firestore error must never fail the product page — same fallback
+  // contract as catalog/settings/content.
+  if (!isAdminConfigured()) return [];
+  try {
+    const snap = await adminDb()
+      .collection(COLLECTION)
+      .where("productId", "==", productId)
+      .get();
+    return snap.docs
+      .map((d) => d.data() as Review)
+      .filter((r) => r.status === "approved")
+      .sort((a, b) => b.createdAt - a.createdAt);
+  } catch (err) {
+    console.error("[reviews] Firestore read failed, returning none:", err);
+    return [];
+  }
 }
 
 /** All reviews (optionally filtered by status) for the admin queue. */
