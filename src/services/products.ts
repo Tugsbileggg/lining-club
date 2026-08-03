@@ -3,7 +3,6 @@ import "server-only";
 import { revalidatePath } from "next/cache";
 import type { Product, ProductVariant } from "@/types";
 import { adminDb } from "@/lib/firebase/admin";
-import { getCollections } from "@/services/catalog";
 import type { ProductInput } from "@/lib/validation/product";
 
 const COLLECTION = "products";
@@ -67,32 +66,20 @@ function buildProduct(
   };
 }
 
-async function revalidateStorefront(handle?: string) {
+// Category pages are not listed here: they render per request now, because
+// revalidating them never reliably took effect in production. See the note in
+// app/(store)/collections/[handle]/page.tsx.
+function revalidateStorefront(handle?: string) {
   revalidatePath("/");
   revalidatePath("/products");
-
-  // Category pages are prerendered per collection by generateStaticParams, and
-  // passing the "/collections/[handle]" route pattern does not invalidate them
-  // — it silently does nothing. Only a concrete path works. Collection handles
-  // are Cyrillic, and the cache key is spelled percent-encoded on a filesystem
-  // cache but decoded on Vercel, so invalidate both. Every collection is
-  // refreshed so moving a product between categories updates the old one too.
-  const collections = await getCollections();
-  for (const { handle: h } of collections) {
-    const decoded = `/collections/${h}`;
-    const encoded = `/collections/${encodeURIComponent(h)}`;
-    revalidatePath(decoded);
-    if (encoded !== decoded) revalidatePath(encoded);
-  }
-
-  if (handle) revalidatePath(`/products/${encodeURIComponent(handle)}`);
+  if (handle) revalidatePath(`/products/${handle}`);
 }
 
 export async function createProduct(input: ProductInput): Promise<Product> {
   const ref = adminDb().collection(COLLECTION).doc();
   const product = buildProduct(ref.id, input, Date.now());
   await ref.set(product);
-  await revalidateStorefront(product.handle);
+  revalidateStorefront(product.handle);
   return product;
 }
 
@@ -103,11 +90,11 @@ export async function updateProduct(
   const existing = await getProductById(id);
   const product = buildProduct(id, input, existing?.createdAt ?? Date.now());
   await adminDb().collection(COLLECTION).doc(id).set(product);
-  await revalidateStorefront(product.handle);
+  revalidateStorefront(product.handle);
   return product;
 }
 
 export async function deleteProduct(id: string): Promise<void> {
   await adminDb().collection(COLLECTION).doc(id).delete();
-  await revalidateStorefront();
+  revalidateStorefront();
 }
