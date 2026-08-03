@@ -73,12 +73,16 @@ async function revalidateStorefront(handle?: string) {
 
   // Category pages are prerendered per collection by generateStaticParams, and
   // passing the "/collections/[handle]" route pattern does not invalidate them
-  // — it silently does nothing. Only a concrete, percent-encoded path matches
-  // the cache entry, and collection handles are Cyrillic. Every collection is
+  // — it silently does nothing. Only a concrete path works. Collection handles
+  // are Cyrillic, and the cache key is spelled percent-encoded on a filesystem
+  // cache but decoded on Vercel, so invalidate both. Every collection is
   // refreshed so moving a product between categories updates the old one too.
   const collections = await getCollections();
-  for (const collection of collections) {
-    revalidatePath(`/collections/${encodeURIComponent(collection.handle)}`);
+  for (const { handle: h } of collections) {
+    const decoded = `/collections/${h}`;
+    const encoded = `/collections/${encodeURIComponent(h)}`;
+    revalidatePath(decoded);
+    if (encoded !== decoded) revalidatePath(encoded);
   }
 
   if (handle) revalidatePath(`/products/${encodeURIComponent(handle)}`);

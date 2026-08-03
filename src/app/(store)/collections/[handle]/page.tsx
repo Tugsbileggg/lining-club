@@ -11,6 +11,14 @@ interface Params {
   params: Promise<{ handle: string }>;
 }
 
+/**
+ * Safety net. Saving a product revalidates these pages explicitly, but that
+ * has silently missed before, which left a new product invisible in its
+ * category indefinitely. An hour-scale staleness bound is not enough for a
+ * shop owner watching for their upload, so re-check every minute.
+ */
+export const revalidate = 60;
+
 export async function generateStaticParams() {
   const collections = await getCollections();
   return collections.map((c) => ({ handle: c.handle }));
