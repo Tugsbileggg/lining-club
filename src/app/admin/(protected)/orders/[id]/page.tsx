@@ -163,6 +163,16 @@ export default async function AdminOrderDetailPage({
               {order.payment.paidAt && (
                 <Row label="Төлсөн огноо" value={formatDate(order.payment.paidAt)} />
               )}
+              {/* Wire's own handle + raw status — what support will ask for. */}
+              <Row
+                label="Wire ID"
+                value={
+                  order.payment.intentId && (
+                    <span className="font-mono text-xs">{order.payment.intentId}</span>
+                  )
+                }
+              />
+              <Row label="Wire төлөв" value={order.payment.providerStatus} />
             </div>
             <div className="mt-3 flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">

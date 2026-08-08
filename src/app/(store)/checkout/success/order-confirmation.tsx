@@ -12,7 +12,14 @@ interface Summary {
   items: { lineId: string; title: string; quantity: number; price: number; size?: string }[];
 }
 
-export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
+export function OrderConfirmation({
+  orderNumber,
+  paid = false,
+}: {
+  orderNumber: string;
+  /** Set when the buyer arrived straight from a settled QPay payment. */
+  paid?: boolean;
+}) {
   const [summary, setSummary] = useState<Summary | null>(null);
 
   useEffect(() => {
@@ -37,6 +44,12 @@ export function OrderConfirmation({ orderNumber }: { orderNumber: string }) {
         Захиалгын дугаар: <span className="font-medium text-foreground">{orderNumber}</span>.
         Бид тантай удахгүй холбогдоно.
       </p>
+
+      {paid && (
+        <p className="mt-3 rounded-full bg-green-600/10 px-4 py-1.5 text-sm font-medium text-green-700 dark:text-green-500">
+          QPay төлбөр амжилттай төлөгдлөө
+        </p>
+      )}
 
       {summary && (
         <div className="mt-8 w-full max-w-md rounded-lg border p-6 text-left">

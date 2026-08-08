@@ -6,8 +6,8 @@ export const metadata: Metadata = { title: "Захиалга баталгааж�
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string }>;
+  searchParams: Promise<{ order?: string; paid?: string }>;
 }) {
-  const { order } = await searchParams;
-  return <OrderConfirmation orderNumber={order ?? "—"} />;
+  const { order, paid } = await searchParams;
+  return <OrderConfirmation orderNumber={order ?? "—"} paid={paid === "1"} />;
 }

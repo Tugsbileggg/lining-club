@@ -19,8 +19,9 @@ and give admin/staff full control.
 | Firebase config, security rules, storage rules, indexes, seed script | ✅ |
 | Firestore-backed catalog/orders/reviews (swap from seed) | ⏳ next phase |
 | Admin/staff dashboard + RBAC auth | ⏳ next phase |
-| API routes (orders, reviews, upload, QPay callback) | ⏳ next phase |
-| QPay integration + email sending | ⏳ stubbed, credentials pending |
+| API routes (orders, reviews, upload, payments) | ⏳ next phase |
+| QPay payments via Wire (reseller) | ✅ built — needs `WIRE_*` credentials |
+| Email sending | ⏳ stubbed |
 
 The catalog currently renders from `src/data/seed.ts` (real titles, prices,
 sizes and Shopify CDN images). `src/services/catalog.ts` is the single data
@@ -70,8 +71,8 @@ Enforced in three layers: `middleware.ts` (route guard), server actions/API
 
 ## Environment variables
 
-See [`.env.example`](.env.example) — Firebase web + admin keys, `QPAY_*`
-(TODO: fill at merchant onboarding), and `EMAIL_*`.
+See [`.env.example`](.env.example) — Firebase web + admin keys, `WIRE_*`
+(payments, see below), and `EMAIL_*`.
 
 ## Deploy (Vercel)
 
@@ -87,8 +88,8 @@ src/
   app/            (store) routes, checkout, track, pages, not-found; admin + api (next phase)
   components/     ui/ (shadcn-style), layout/, product/, cart/, home/, reviews/
   features/cart/  Zustand store (persisted)
-  services/       catalog.ts (data layer) — orders/reviews/payment/email next phase
-  lib/            firebase/{client,admin}, format (MNT), utils, validation/, order-number
+  services/       catalog.ts (data layer), orders.ts, payment.ts (Wire/QPay), reviews…
+  lib/            firebase/{client,admin}, payments/wire.ts, format (MNT), utils, validation/
   config/site.ts  store info + navigation (mirrors live menu)
   data/seed.ts    real Lining Club catalog
   types/          domain model
@@ -96,9 +97,72 @@ firestore.rules · storage.rules · firestore.indexes.json · firebase.json
 scripts/seed.ts
 ```
 
-## Payments (QPay) — architecture only
+## Payments — QPay via Wire (reseller mode)
 
-A `PaymentProvider` interface with a `QPayProvider` (`createInvoice` /
-`checkStatus`) will live in `src/services/payment/`. Credentials go in `QPAY_*`.
-Checkout currently simulates a guest order client-side (see the `TODO(backend)`
-markers in `src/app/checkout/page.tsx`).
+QPay is reached through **Wire**, not directly. The connection is registered on
+Wire as `operator: "qpay", mode: "reseller"`, which means Wire settles under its
+own QPay merchant rights — **this app holds no QPay username, password or
+invoice code**. The only secret is the Wire API key.
+
+### One-time onboarding (Wire dashboard — not automatable)
+
+1. Wire dashboard → your project → **Суваг** (`/project/connectors`).
+2. Pick the **QPay** card (“QR нэхэмжлэх — reseller merchant”).
+3. Submit the application form (business details, MCC, address).
+4. Wait for Wire's admin to approve it.
+5. Sign the QPay contract: read the PDF, accept the terms, sign electronically
+   with **ДАН**.
+6. The merchant activates and can accept QR payments.
+7. Choose the settlement account under **Данс удирдах**.
+
+Then set `WIRE_API_BASE_URL` and `WIRE_API_KEY` in the environment. Admin →
+Тохиргоо shows the live connection (`GET /v1/operator_connections`) and a test
+button (`POST /v1/operator_connections/{id}/test`).
+
+Also register a webhook endpoint for `payment_intent.succeeded` (Admin →
+Тохиргоо prints the URL) and put the returned `whsec_…` in
+`WIRE_WEBHOOK_SECRET` — Wire shows that secret only once.
+
+### How a payment flows
+
+Collection uses Wire's **hosted checkout**: Wire renders the QR and the bank
+deeplinks on `pay.wire.mn`. There is no API that returns a raw QR, and
+`/v1/payment_intents/{id}/confirm` must NOT be called — a confirmed intent can
+no longer take a checkout session.
+
+```
+checkout (qpay) → POST /api/orders                  order + payment token
+               → /checkout/pay/[orderNumber]
+               → POST /api/payments/qpay/session    PaymentIntent (qpay only)
+                                                    + checkout session
+               → redirect to pay.wire.mn            QR + bank deeplinks
+buyer pays  ───→ back to /checkout/pay/…?return=1   verify, never trust redirect
+               → POST /api/payments/qpay/status     polled until confirmed
+Wire  ─────────→ POST /api/payments/wire/webhook    payment_intent.succeeded
+               → success page
+```
+
+- `src/lib/payments/wire.ts` — Wire HTTP client (connections, intents, sessions).
+- `src/services/payment.ts` — order-aware orchestration; reuses a live intent
+  instead of minting a second invoice on refresh.
+- Neither the webhook nor the return redirect is trusted: both only *trigger* a
+  re-read of the intent from Wire's API, which is what actually marks an order
+  paid. This is Wire's own documented advice.
+- Public payment endpoints are gated by a per-order token issued at checkout
+  (order numbers are short and partly time-derived, so they are not a secret).
+  The token is kept in `sessionStorage`, never in the URL.
+
+**Amounts are whole tögrög** — `amount: 12345` is billed as 12,345 ₮. Wire's
+docs claim minor units ("50000 гэдэг нь 500.00 ₮"), but the live product does
+not: an intent created with `amount: 12345` renders as "12,345₮" on
+pay.wire.mn and dispatches to QPay at that figure. `toWireAmount()` is the
+single place this lives — flip it there if Wire ever confirms the docs.
+
+Every mutating POST needs an `Idempotency-Key`; the client sends a stable key
+when creating an invoice (so a retry cannot double-charge) and a fresh one
+otherwise.
+
+### Testing without money
+
+Wire has a sandbox: take an `sk_test_…` key from the dashboard and use
+`allowed_operators: ["sandbox"]`. No contract needed and no real funds move.

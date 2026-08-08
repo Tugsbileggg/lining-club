@@ -2,6 +2,7 @@
 // mutates status for the admin console. All writes go through firebase-admin
 // (bypasses Firestore rules); the public client never touches the collection.
 import "server-only";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import type {
   Order,
   OrderCustomer,
@@ -88,9 +89,12 @@ export async function createOrder(input: OrderInput): Promise<Order> {
   const now = Date.now();
   const payment: OrderPayment = {
     provider: input.paymentMethod,
-    // QPay isn't wired yet → invoice pending; manual (bank/cash) → unpaid
+    // QPay → awaiting the customer to scan the QR; manual (bank/cash) → unpaid
     // until staff confirm receipt.
     status: input.paymentMethod === "qpay" ? "pending" : "unpaid",
+    // Gate for the public QR/status endpoints (QPay only — nothing to guard on
+    // a manual order).
+    token: input.paymentMethod === "qpay" ? randomUUID() : undefined,
     paidAt: null,
   };
 
@@ -139,6 +143,46 @@ export async function getOrderByNumber(
   return doc ? (doc.data() as Order) : null;
 }
 
+/** Reverse lookup used by the Wire webhook when it reports only an intent id. */
+export async function getOrderByIntentId(
+  intentId: string,
+): Promise<Order | null> {
+  const snap = await adminDb()
+    .collection(COLLECTION)
+    .where("payment.intentId", "==", intentId)
+    .limit(1)
+    .get();
+  const doc = snap.docs[0];
+  return doc ? (doc.data() as Order) : null;
+}
+
+/** Constant-time comparison of the buyer's payment token. */
+export function verifyPaymentToken(
+  order: Order,
+  token: string | null | undefined,
+): boolean {
+  const expected = order.payment.token;
+  if (!expected || !token) return false;
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(token, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+/**
+ * Order lookup for the public payment endpoints. Returns null both for an
+ * unknown order number and for a bad token, so a caller cannot use the
+ * response to discover which order numbers exist.
+ */
+export async function getOrderForPayment(
+  orderNumber: string,
+  token: string | null | undefined,
+): Promise<Order | null> {
+  const order = await getOrderByNumber(orderNumber);
+  if (!order || !verifyPaymentToken(order, token)) return null;
+  return order;
+}
+
 export interface OrderPatch {
   status?: OrderStatus;
   paymentStatus?: PaymentStatus;
@@ -177,4 +221,75 @@ export async function updateOrder(
 
 export async function deleteOrder(id: string): Promise<void> {
   await adminDb().collection(COLLECTION).doc(id).delete();
+}
+
+// ── Payment provider hooks ────────────────────────────────────
+
+/** Remember which Wire PaymentIntent belongs to this order. */
+export async function attachPaymentIntent(
+  id: string,
+  intentId: string,
+): Promise<void> {
+  await adminDb().collection(COLLECTION).doc(id).update({
+    "payment.intentId": intentId,
+    updatedAt: Date.now(),
+  });
+}
+
+export interface PaymentResult {
+  status: PaymentStatus;
+  /** Wire's raw status string, stored for diagnosis. */
+  providerStatus?: string;
+  operator?: string;
+}
+
+/**
+ * Record a payment outcome reported by the provider.
+ *
+ * Idempotent by design: the webhook and the customer's polling both land here,
+ * often at the same moment. A paid order is never rewritten — `paidAt` must
+ * stay the first settlement time, and re-writing would re-trigger any
+ * downstream side effects. Returns the (possibly unchanged) order.
+ */
+export async function applyPaymentResult(
+  id: string,
+  result: PaymentResult,
+): Promise<{ order: Order; changed: boolean }> {
+  const ref = adminDb().collection(COLLECTION).doc(id);
+  const doc = await ref.get();
+  if (!doc.exists) throw new OrderError("Захиалга олдсонгүй.");
+  const current = doc.data() as Order;
+
+  if (current.payment.status === "paid") {
+    return { order: current, changed: false };
+  }
+  if (current.payment.status === result.status && !result.providerStatus) {
+    return { order: current, changed: false };
+  }
+
+  const now = Date.now();
+  const paidAt = result.status === "paid" ? now : (current.payment.paidAt ?? null);
+  const update: Record<string, unknown> = {
+    updatedAt: now,
+    "payment.status": result.status,
+    "payment.paidAt": paidAt,
+  };
+  if (result.providerStatus) update["payment.providerStatus"] = result.providerStatus;
+  if (result.operator) update["payment.operator"] = result.operator;
+
+  await ref.update(update);
+  return {
+    order: {
+      ...current,
+      payment: {
+        ...current.payment,
+        status: result.status,
+        paidAt,
+        providerStatus: result.providerStatus ?? current.payment.providerStatus,
+        operator: result.operator ?? current.payment.operator,
+      },
+      updatedAt: now,
+    },
+    changed: true,
+  };
 }

@@ -116,6 +116,19 @@ export interface OrderItem {
 export interface OrderPayment {
   provider: "qpay" | "manual";
   status: PaymentStatus;
+  /** Wire PaymentIntent id — the authoritative handle for a QPay payment. */
+  intentId?: string;
+  /** Operator that actually settled it, as reported by Wire (e.g. "qpay"). */
+  operator?: string;
+  /** Wire's raw status string, kept verbatim for admin diagnosis. */
+  providerStatus?: string;
+  /**
+   * Secret handed to the buyer at checkout and required to open the QR page or
+   * poll its status. Order numbers are short and partly time-derived, so this
+   * is what actually gates the payment endpoints. Never leaves the server
+   * except in the checkout response to the buyer who just placed the order.
+   */
+  token?: string;
   invoiceId?: string;
   paidAt?: Timestampish | null;
 }

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ZodError } from "zod";
 import { orderInputSchema } from "@/lib/validation/order";
 import { createOrder, OrderError } from "@/services/orders";
+import { isQpayEnabled } from "@/services/payment";
 import { notifyOrder } from "@/lib/emails/order";
 
 export const runtime = "nodejs";
@@ -14,6 +15,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const input = orderInputSchema.parse(body);
+
+    // The storefront hides QPay when Wire is unconfigured, but the schema still
+    // accepts it — refuse here so a stale tab or a hand-rolled request cannot
+    // create an order whose payment page does not exist.
+    if (input.paymentMethod === "qpay" && !isQpayEnabled()) {
+      return NextResponse.json(
+        { error: "QPay төлбөр түр боломжгүй байна. Өөр хэлбэр сонгоно уу." },
+        { status: 409 },
+      );
+    }
+
     const order = await createOrder(input);
     // Confirmation + store notification. Never throws (failure is logged only).
     await notifyOrder(order);
@@ -27,6 +39,9 @@ export async function POST(req: NextRequest) {
           total: order.total,
           items: order.items,
           createdAt: order.createdAt,
+          // QPay only: the buyer needs this to open the QR page and poll it.
+          // It is generated per order and never returned by any other endpoint.
+          paymentToken: order.payment.token,
         },
       },
       { status: 201 },

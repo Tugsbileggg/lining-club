@@ -10,6 +10,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed.ts",
+    "check-wire": "tsx scripts/check-wire.ts",
     "set-admin": "tsx scripts/set-admin.ts"
   },
   "dependencies": {
