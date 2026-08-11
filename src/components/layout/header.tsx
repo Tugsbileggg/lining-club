@@ -17,8 +17,8 @@ export function Header() {
             <Image
               src="/logo.png"
               alt={siteConfig.name}
-              width={600}
-              height={600}
+              width={48}
+              height={48}
               priority
               className="h-12 w-12 object-contain invert dark:invert-0"
             />

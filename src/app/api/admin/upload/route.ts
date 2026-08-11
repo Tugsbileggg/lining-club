@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
         resumable: false,
         metadata: {
           contentType: file.type,
+          // Object paths are unique per upload and never overwritten, so the
+          // bytes are immutable. Without this Firebase serves no max-age and
+          // every layer downstream re-fetches the original on its own schedule.
+          cacheControl: "public, max-age=31536000, immutable",
           metadata: { firebaseStorageDownloadTokens: token },
         },
       });
