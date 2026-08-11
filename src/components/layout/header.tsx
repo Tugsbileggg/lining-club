@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Package } from "lucide-react";
 import { mainNav, siteConfig } from "@/config/site";
+import { Button } from "@/components/ui/button";
 import { MobileNav } from "./mobile-nav";
 import { SearchSheet } from "./search-sheet";
 import { ThemeToggle } from "./theme-toggle";
@@ -38,6 +40,11 @@ export function Header() {
 
           <div className="ml-auto flex items-center gap-0.5 lg:ml-0">
             <SearchSheet />
+            <Button variant="ghost" size="icon" asChild aria-label="Захиалга хянах">
+              <Link href="/track" title="Захиалга хянах">
+                <Package className="size-5" />
+              </Link>
+            </Button>
             <ThemeToggle />
             <CartButton />
           </div>
