@@ -133,6 +133,18 @@ export function orderNotificationEmail(order: Order): {
 }
 
 /**
+ * Who gets the "new order" notification. ORDER_NOTIFY_EMAIL holds one address
+ * or several separated by commas, so the owner and whoever packs the orders
+ * can both be on it.
+ */
+export function orderNotifyRecipients(): string[] {
+  return (process.env.ORDER_NOTIFY_EMAIL ?? "")
+    .split(",")
+    .map((a) => a.trim())
+    .filter(Boolean);
+}
+
+/**
  * Send order emails. Best-effort and non-blocking by design — any failure is
  * logged but never thrown, so emailing can't break order creation.
  */
@@ -144,10 +156,12 @@ export async function notifyOrder(order: Order): Promise<void> {
     tasks.push(sendEmail({ to: order.customer.email, subject, html, text }));
   }
 
-  const storeTo = process.env.ORDER_NOTIFY_EMAIL;
-  if (storeTo) {
+  const storeRecipients = orderNotifyRecipients();
+  if (storeRecipients.length > 0) {
     const { subject, html, text } = orderNotificationEmail(order);
-    tasks.push(sendEmail({ to: storeTo, subject, html, text }));
+    for (const to of storeRecipients) {
+      tasks.push(sendEmail({ to, subject, html, text }));
+    }
   }
 
   try {

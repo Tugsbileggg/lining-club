@@ -3,6 +3,7 @@ import { getSettings } from "@/services/settings";
 import { ComingSoon } from "@/components/admin/coming-soon";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { PaymentConnectionCard } from "@/components/admin/payment-connection-card";
+import { EmailTestCard } from "@/components/admin/email-test-card";
 import type { SettingsInput } from "@/lib/validation/settings";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,9 @@ export default async function AdminSettingsPage() {
       </div>
       <div className="mt-6">
         <PaymentConnectionCard />
+      </div>
+      <div className="mt-6">
+        <EmailTestCard />
       </div>
       <div className="mt-6">
         <SettingsForm initial={initial} />
