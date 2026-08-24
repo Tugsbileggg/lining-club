@@ -10,6 +10,8 @@ import { checkoutSchema, type CheckoutInput } from "@/lib/validation/checkout";
 import { useCart, selectSubtotal } from "@/features/cart/store";
 import { useMounted } from "@/hooks/use-mounted";
 import { formatPrice } from "@/lib/format";
+import { bankTransfer } from "@/config/site";
+import { BankTransferDetails } from "@/components/checkout/bank-transfer-details";
 import { paymentTokenKey } from "@/lib/payments/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,9 +36,14 @@ function Field({
   );
 }
 
+
 const PAYMENT_OPTIONS = [
   { v: "qpay", label: "QPay", desc: "Аюулгүй төлбөрийн хуудсаар QR уншуулж төлнө" },
-  { v: "manual", label: "Дансаар / Бэлэн", desc: "Захиалга баталгаажсаны дараа холбогдоно" },
+  {
+    v: "manual",
+    label: "Дансаар / Бэлэн",
+    desc: `Урьдчилгаа ${bankTransfer.depositPercent}% шилжүүлснээр баталгаажна`,
+  },
 ] as const;
 
 /**
@@ -228,6 +235,8 @@ export function CheckoutForm({ qpayEnabled }: { qpayEnabled: boolean }) {
               </button>
             ))}
           </div>
+
+          {paymentMethod === "manual" && <BankTransferDetails total={subtotal} />}
         </form>
 
         <aside className="h-fit rounded-lg border p-6 lg:sticky lg:top-28">

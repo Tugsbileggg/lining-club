@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
+import { BankTransferDetails } from "@/components/checkout/bank-transfer-details";
 
 interface Summary {
   orderNumber: string;
@@ -15,10 +16,13 @@ interface Summary {
 export function OrderConfirmation({
   orderNumber,
   paid = false,
+  bankDue = null,
 }: {
   orderNumber: string;
   /** Set when the buyer arrived straight from a settled QPay payment. */
   paid?: boolean;
+  /** Order total, set only for bank-transfer orders that still owe money. */
+  bankDue?: number | null;
 }) {
   const [summary, setSummary] = useState<Summary | null>(null);
 
@@ -68,6 +72,12 @@ export function OrderConfirmation({
             <span>Нийт</span>
             <span>{formatPrice(summary.subtotal)}</span>
           </div>
+        </div>
+      )}
+
+      {bankDue !== null && (
+        <div className="mt-8 w-full max-w-md">
+          <BankTransferDetails total={bankDue} orderNumber={orderNumber} />
         </div>
       )}
 

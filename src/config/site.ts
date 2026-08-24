@@ -48,3 +48,19 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     ],
   },
 ];
+
+/**
+ * Bank details shown when the buyer picks "Дансаар / Бэлэн" at checkout.
+ * Staff match an incoming transfer to an order by the order number the buyer
+ * writes in the transfer description, then mark the order paid by hand.
+ */
+export const bankTransfer = {
+  bank: "Хаан банк",
+  /** 10-digit domestic account number — what a transfer form asks for. */
+  account: "5420308170",
+  /** Full IBAN, for transfers that ask for one. */
+  iban: "MN56 0005 00 5420308170",
+  accountName: "Наранбаяр Энхундрал",
+  /** Share of the total that must land before staff confirm the order. */
+  depositPercent: 50,
+} as const;

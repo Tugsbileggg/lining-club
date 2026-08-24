@@ -3,7 +3,7 @@
 import "server-only";
 import type { Order } from "@/types";
 import { formatPrice } from "@/lib/format";
-import { siteConfig } from "@/config/site";
+import { siteConfig, bankTransfer } from "@/config/site";
 import { sendEmail } from "@/lib/email";
 
 function esc(s: string): string {
@@ -44,6 +44,45 @@ function shell(title: string, bodyHtml: string): string {
   </div>`;
 }
 
+/**
+ * Bank details for a transfer order. The buyer needs these once they have left
+ * the site, and the order number is what staff match an incoming transfer
+ * against — so it is spelled out as the transfer description.
+ */
+function bankBlock(order: Order): string {
+  if (order.payment.provider !== "manual") return "";
+  const deposit = Math.ceil((order.total * bankTransfer.depositPercent) / 100);
+  const row = (label: string, value: string, strong = false) =>
+    `<tr>
+       <td style="padding:3px 0;color:#666;">${esc(label)}</td>
+       <td style="padding:3px 0;text-align:right;${strong ? "font-weight:600;" : ""}">${esc(value)}</td>
+     </tr>`;
+  return `<div style="margin-top:20px;border:1px solid #eee;border-radius:8px;padding:16px;background:#fafafa;">
+    <p style="margin:0 0 10px;font-size:14px;font-weight:600;">Шилжүүлэх данс</p>
+    <table style="width:100%;font-size:14px;border-collapse:collapse;">
+      ${row("Банк", bankTransfer.bank)}
+      ${row("Дансны дугаар", bankTransfer.account, true)}
+      ${row("Хүлээн авагч", bankTransfer.accountName)}
+      ${row("Гүйлгээний утга", order.orderNumber, true)}
+    </table>
+    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#444;">
+      Нийт дүнгийн <strong>${bankTransfer.depositPercent}%</strong> буюу
+      <strong>${formatPrice(deposit)}</strong> шилжүүлснээр захиалга баталгаажна.
+      Гүйлгээний утгад <strong>${esc(order.orderNumber)}</strong> гэж заавал бичнэ үү.
+    </p>
+  </div>`;
+}
+
+function bankText(order: Order): string {
+  if (order.payment.provider !== "manual") return "";
+  const deposit = Math.ceil((order.total * bankTransfer.depositPercent) / 100);
+  return `
+
+Шилжүүлэх данс: ${bankTransfer.bank} ${bankTransfer.account} (${bankTransfer.accountName})
+Гүйлгээний утга: ${order.orderNumber}
+Нийт дүнгийн ${bankTransfer.depositPercent}% буюу ${formatPrice(deposit)} шилжүүлснээр захиалга баталгаажна.`;
+}
+
 export function orderConfirmationEmail(order: Order): {
   subject: string;
   html: string;
@@ -61,13 +100,14 @@ export function orderConfirmationEmail(order: Order): {
      <p style="margin-top:16px;font-size:14px;">
        Хүргэх хаяг: ${esc(order.customer.address)}${order.customer.city ? `, ${esc(order.customer.city)}` : ""}
      </p>
+     ${bankBlock(order)}
      <p style="margin-top:16px;">
        <a href="${trackUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:14px;">
          Захиалга хянах
        </a>
      </p>`,
   );
-  const text = `Захиалга баталгаажлаа — ${order.orderNumber}\n\nСайн байна уу, ${order.customer.name}. Таны захиалга амжилттай үүслээ. Нийт: ${formatPrice(order.total)}.\nХянах: ${trackUrl}`;
+  const text = `Захиалга баталгаажлаа — ${order.orderNumber}\n\nСайн байна уу, ${order.customer.name}. Таны захиалга амжилттай үүслээ. Нийт: ${formatPrice(order.total)}.\nХянах: ${trackUrl}${bankText(order)}`;
   return { subject: `Захиалга баталгаажлаа — ${order.orderNumber}`, html, text };
 }
 
