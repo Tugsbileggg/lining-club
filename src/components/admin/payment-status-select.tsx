@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const OPTIONS: { value: PaymentStatus; label: string }[] = [
   { value: "unpaid", label: "Төлөгдөөгүй" },
-  { value: "pending", label: "Хүлээгдэж буй" },
+  { value: "pending", label: "Гүйлгээ хүлээгдэж буй" },
   { value: "paid", label: "Төлсөн" },
   { value: "failed", label: "Амжилтгүй" },
 ];

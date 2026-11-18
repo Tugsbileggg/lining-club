@@ -10,7 +10,6 @@ import { checkoutSchema, type CheckoutInput } from "@/lib/validation/checkout";
 import { useCart, selectSubtotal } from "@/features/cart/store";
 import { useMounted } from "@/hooks/use-mounted";
 import { formatPrice } from "@/lib/format";
-import { bankTransfer } from "@/config/site";
 import { BankTransferDetails } from "@/components/checkout/bank-transfer-details";
 import { paymentTokenKey } from "@/lib/payments/session";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,7 @@ const PAYMENT_OPTIONS = [
   {
     v: "manual",
     label: "Дансаар / Бэлэн",
-    desc: `Урьдчилгаа ${bankTransfer.depositPercent}% шилжүүлснээр баталгаажна`,
+    desc: "Нийт дүнг бүтнээр нь шилжүүлснээр баталгаажна",
   },
 ] as const;
 

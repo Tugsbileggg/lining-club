@@ -72,7 +72,7 @@ function sampleOrder(): Order {
     subtotal: 5000,
     shipping: 0,
     total: 5000,
-    payment: { provider: "manual", status: "unpaid", paidAt: null },
+    payment: { provider: "manual", status: "pending", paidAt: null },
     createdAt: now,
     updatedAt: now,
   };
