@@ -89,9 +89,10 @@ export async function createOrder(input: OrderInput): Promise<Order> {
   const now = Date.now();
   const payment: OrderPayment = {
     provider: input.paymentMethod,
-    // QPay → awaiting the customer to scan the QR; manual (bank/cash) → unpaid
-    // until staff confirm receipt.
-    status: input.paymentMethod === "qpay" ? "pending" : "unpaid",
+    // Both start as awaiting the transaction ("Гүйлгээ хүлээгдэж буй"): QPay
+    // until the customer scans the QR, manual until staff see the full total
+    // land in the account and mark it paid.
+    status: "pending",
     // Gate for the public QR/status endpoints (QPay only — nothing to guard on
     // a manual order).
     token: input.paymentMethod === "qpay" ? randomUUID() : undefined,

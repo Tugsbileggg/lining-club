@@ -51,8 +51,7 @@ function shell(title: string, bodyHtml: string): string {
  */
 function bankBlock(order: Order): string {
   if (order.payment.provider !== "manual") return "";
-  const deposit = Math.ceil((order.total * bankTransfer.depositPercent) / 100);
-  const row = (label: string, value: string, strong = false) =>
+  const row =(label: string, value: string, strong = false) =>
     `<tr>
        <td style="padding:3px 0;color:#666;">${esc(label)}</td>
        <td style="padding:3px 0;text-align:right;${strong ? "font-weight:600;" : ""}">${esc(value)}</td>
@@ -63,11 +62,11 @@ function bankBlock(order: Order): string {
       ${row("Банк", bankTransfer.bank)}
       ${row("Дансны дугаар", bankTransfer.account, true)}
       ${row("Хүлээн авагч", bankTransfer.accountName)}
+      ${row("Шилжүүлэх дүн", formatPrice(order.total), true)}
       ${row("Гүйлгээний утга", order.orderNumber, true)}
     </table>
     <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#444;">
-      Нийт дүнгийн <strong>${bankTransfer.depositPercent}%</strong> буюу
-      <strong>${formatPrice(deposit)}</strong> шилжүүлснээр захиалга баталгаажна.
+      Нийт дүнг (<strong>${formatPrice(order.total)}</strong>) бүтнээр нь шилжүүлснээр захиалга баталгаажна.
       Гүйлгээний утгад <strong>${esc(order.orderNumber)}</strong> гэж заавал бичнэ үү.
     </p>
   </div>`;
@@ -75,12 +74,12 @@ function bankBlock(order: Order): string {
 
 function bankText(order: Order): string {
   if (order.payment.provider !== "manual") return "";
-  const deposit = Math.ceil((order.total * bankTransfer.depositPercent) / 100);
   return `
 
 Шилжүүлэх данс: ${bankTransfer.bank} ${bankTransfer.account} (${bankTransfer.accountName})
+Шилжүүлэх дүн: ${formatPrice(order.total)}
 Гүйлгээний утга: ${order.orderNumber}
-Нийт дүнгийн ${bankTransfer.depositPercent}% буюу ${formatPrice(deposit)} шилжүүлснээр захиалга баталгаажна.`;
+Нийт дүнг бүтнээр нь шилжүүлснээр захиалга баталгаажна.`;
 }
 
 export function orderConfirmationEmail(order: Order): {

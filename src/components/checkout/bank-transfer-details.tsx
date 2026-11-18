@@ -6,7 +6,7 @@ import { bankTransfer } from "@/config/site";
 import { formatPrice } from "@/lib/format";
 
 /**
- * Where to send a bank transfer, and how much of the total unlocks the order.
+ * Where to send a bank transfer. The buyer pays the full total up front.
  *
  * Shown at checkout (before the order exists) and again on the confirmation
  * page and email, because a buyer who closes the tab otherwise has no way back
@@ -20,8 +20,6 @@ export function BankTransferDetails({
   total: number;
   orderNumber?: string;
 }) {
-  const deposit = Math.ceil((total * bankTransfer.depositPercent) / 100);
-
   async function copyAccount() {
     try {
       await navigator.clipboard.writeText(bankTransfer.account);
@@ -58,6 +56,10 @@ export function BankTransferDetails({
           <dt className="text-muted-foreground">Хүлээн авагч</dt>
           <dd className="text-right">{bankTransfer.accountName}</dd>
         </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-muted-foreground">Шилжүүлэх дүн</dt>
+          <dd className="font-mono font-medium">{formatPrice(total)}</dd>
+        </div>
         {orderNumber && (
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-muted-foreground">Гүйлгээний утга</dt>
@@ -68,9 +70,8 @@ export function BankTransferDetails({
 
       <div className="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
         <p className="text-xs leading-relaxed">
-          Нийт дүнгийн <strong>{bankTransfer.depositPercent}%</strong> буюу{" "}
-          <strong>{formatPrice(deposit)}</strong> шилжүүлснээр захиалга
-          баталгаажна.{" "}
+          Нийт дүнг (<strong>{formatPrice(total)}</strong>) бүтнээр нь
+          шилжүүлснээр захиалга баталгаажна.{" "}
           {orderNumber ? (
             <>
               Гүйлгээний утгад <strong>{orderNumber}</strong> гэж заавал бичнэ үү.

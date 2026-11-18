@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const PAYMENT_LABEL: Record<PaymentStatus, string> = {
   unpaid: "Төлөгдөөгүй",
-  pending: "Хүлээгдэж буй",
+  pending: "Гүйлгээ хүлээгдэж буй",
   paid: "Төлсөн",
   failed: "Амжилтгүй",
 };
